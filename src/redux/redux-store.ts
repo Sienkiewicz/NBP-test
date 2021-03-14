@@ -1,9 +1,9 @@
 import thunkMiddleware, { ThunkAction } from 'redux-thunk'
 import { createStore, combineReducers, applyMiddleware, Action } from 'redux'
-import reducer from './reducer'
+import CurrenciesReducer from './reducer'
 
 let reducers = combineReducers({
-  currency: reducer,
+  currencies: CurrenciesReducer,
 })
 
 export type AppStateType = ReturnType<typeof reducers>
@@ -16,7 +16,7 @@ export type InferActionTypes<T> = T extends {
 export type BaseTThunk<A extends Action, R = Promise<void>> = ThunkAction<
   R,
   AppStateType,
-  null,
+  unknown,
   A
 >
 

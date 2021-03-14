@@ -1,88 +1,40 @@
-import { CurrencyFull, CurrencyMid } from './../type.d';
+import { CurrencyFull, CurrencyMid, RateMid } from './../type.d'
 import { BaseTThunk, InferActionTypes } from './redux-store'
 
 let initialState = {
-  fullListOfCurrencies: CurrencyMid,
+  fullListOfCurrencies: undefined as undefined | CurrencyMid,
   arrOfUserCurrencies: [] as CurrencyFull[],
-  preferCurrencies: ['usd', 'uah', 'pl'],
   isFetchingFullList: false,
-  isFetchingSeparateCurrency: false,
+  requestedCurrencies: [] as RateMid[],
 }
 
-const usersReducer = (
+const CurrenciesReducer = (
   state = initialState,
   action: ActionTypes
-): InitialStateUsersType => {
+): InitialStateType => {
   switch (action.type) {
-    case 'SM/USERS/SET_USERS':
+    case 'SM/USERS/SET_FULL_LIST_OF_CURRENCIES':
       return {
         ...state,
-        users: action.payload.users,
+        fullListOfCurrencies: action.payload.data,
       }
 
-    case 'SM/USERS/TOGGLE_IS_FETCHING':
+    case 'SM/USERS/TOGGLE_IS_FETCHING_FULL_LIST':
       return {
         ...state,
-        isFetching: action.payload.isFetching,
+        isFetchingFullList: action.payload.isFetching,
       }
 
-    case 'SM/USERS/ADD_USER':
+    case 'SM/USERS/EDIT_CURRENCIES':
       return {
         ...state,
-        users: [
-          ...state.users,
-          {
-            id: action.payload.id,
-            name: action.payload.name,
-            username: action.payload.username || action.payload.name,
-            email: action.payload.email,
-            address: {
-              city: action.payload.city || '---',
-            },
-          },
-        ],
-      }
-
-    case 'SM/USERS/EDIT_USER':
-      return {
-        ...state,
-        users: state.users.map((u) => {
-          if (u.id === action.payload.id) {
-            return {
-              ...u,
-              name: action.payload.name,
-              username: action.payload.username || action.payload.name,
-              email: action.payload.email,
-              address: {
-                city: action.payload.city || '---',
-              },
-            }
+        requestedCurrencies: (function () {
+          if (state.fullListOfCurrencies) {
+            return state.fullListOfCurrencies.rates.filter((el) => {
+              return action.payload.currencies.some((cur) => cur === el.code)
+            })
           }
-          return u
-        }),
-      }
-
-    case 'SM/USERS/DELETE_USER':
-      return {
-        ...state,
-        users: state.users.filter((u) => u.id !== action.payload.id),
-      }
-
-    case 'SM/USERS/SORT_USERS':
-      return {
-        ...state,
-        users: (() => {
-          const sort = state.users.sort((a, b) => {
-            const x = a.name.toLowerCase()
-            const y = b.name.toLowerCase()
-            return x > y ? 1 : x < y ? -1 : 0
-          })
-          if (action.payload.direction) {
-            const arr = sort.reverse()
-            return arr
-          } else {
-            return sort
-          }
+          return []
         })(),
       }
 
@@ -91,29 +43,50 @@ const usersReducer = (
   }
 }
 
-export const actionsOfUsers = {
-  setUsers: (users: User[]) =>
-    ({ type: 'SM/USERS/SET_USERS', payload: { users } } as const),
-  toggleIsFetching: (isFetching: boolean) =>
-    ({ type: 'SM/USERS/TOGGLE_IS_FETCHING', payload: { isFetching } } as const),
+export const actions = {
+  setFullListOfCurrencies: (data: CurrencyMid) =>
+    ({
+      type: 'SM/USERS/SET_FULL_LIST_OF_CURRENCIES',
+      payload: { data },
+    } as const),
+  setArrOfUserCurrencies: (arrOfUserCurrencies: CurrencyFull) =>
+    ({
+      type: 'SM/USERS/SET_ARR_OF_USER_CURRENCIES',
+      payload: { arrOfUserCurrencies },
+    } as const),
+  editCurrencies: (currencies: string[]) =>
+    ({
+      type: 'SM/USERS/EDIT_CURRENCIES',
+      payload: { currencies },
+    } as const),
+  toggleIsFetchingFullList: (isFetching: boolean) =>
+    ({
+      type: 'SM/USERS/TOGGLE_IS_FETCHING_FULL_LIST',
+      payload: { isFetching },
+    } as const),
 }
 
 export const getFullListOfCurrencies = (): TThunk => {
   return async (dispatch) => {
-    dispatch(actionsOfUsers.toggleIsFetching(true))
-    await fetch('http://api.nbp.pl/api/exchangerates/tables/a/')
-      .then((response) => {
-        return response.json()
-      })
-      .then((data: CurrencyMid) => {
-        dispatch(actionsOfUsers.setUsers(data))
-      })
-    dispatch(actionsOfUsers.toggleIsFetching(false))
+    dispatch(actions.toggleIsFetchingFullList(true))
+    try {
+      await fetch('http://api.nbp.pl/api/exchangerates/tables/a/')
+        .then((response) => {
+          return response.json()
+        })
+        .then((data) => {
+          dispatch(actions.setFullListOfCurrencies(data[0]))
+        })
+    } catch (err) {
+      console.error(err)
+    }
+
+    dispatch(actions.toggleIsFetchingFullList(false))
   }
 }
 
-export default usersReducer
+export default CurrenciesReducer
 
-export type InitialStateUsersType = typeof initialState
-type ActionTypes = InferActionTypes<typeof actionsOfUsers>
-type TThunk = BaseTThunk<ActionTypes>
+export type InitialStateType = typeof initialState
+export type ActionTypes = InferActionTypes<typeof actions>
+export type TThunk = BaseTThunk<ActionTypes>
