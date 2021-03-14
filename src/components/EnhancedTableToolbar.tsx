@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useCallback } from 'react'
 import clsx from 'clsx'
 import {
   createStyles,
@@ -17,6 +17,7 @@ import ListOfCurrencies from './ListOfCurrencies'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppStateType } from '../redux/redux-store'
 import { getFullListOfCurrencies } from '../redux/reducer'
+import AlertDialog from './AlertDialog'
 
 const useToolbarStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -42,16 +43,19 @@ const useToolbarStyles = makeStyles((theme: Theme) =>
 
 type Props = {
   numSelected: number
+  openPrompt: boolean
   editArrCurrencies(): void
+  handleTogglePrompt(): void
 }
 
 export const EnhancedTableToolbar: FC<Props> = React.memo(
-  ({ numSelected, editArrCurrencies }) => {
+  ({ numSelected, editArrCurrencies, openPrompt, handleTogglePrompt }) => {
     const classes = useToolbarStyles()
     const rates = useSelector(
       (state: AppStateType) => state.currencies.fullListOfCurrencies?.rates
     )
     const [open, setOpen] = React.useState(false)
+
     const dispatch = useDispatch()
 
     const handleClickOpen = () => {
@@ -66,6 +70,11 @@ export const EnhancedTableToolbar: FC<Props> = React.memo(
     return (
       <>
         <ListOfCurrencies rates={rates} open={open} handleClose={handleClose} />
+        <AlertDialog
+          editArrCurrencies={editArrCurrencies}
+          handleTogglePrompt={handleTogglePrompt}
+          openPrompt={openPrompt}
+        />
         <Toolbar
           className={clsx(classes.root, {
             [classes.highlight]: numSelected > 0,
@@ -93,7 +102,7 @@ export const EnhancedTableToolbar: FC<Props> = React.memo(
           {numSelected > 0 ? (
             <Tooltip title='Delete'>
               <IconButton aria-label='delete'>
-                <DeleteIcon onClick={editArrCurrencies} />
+                <DeleteIcon onClick={handleTogglePrompt} />
               </IconButton>
             </Tooltip>
           ) : (

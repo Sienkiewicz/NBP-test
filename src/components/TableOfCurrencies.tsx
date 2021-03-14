@@ -55,6 +55,7 @@ const TableOfCurrencies: FC = () => {
   const [selected, setSelected] = React.useState<string[]>([])
   const [page, setPage] = React.useState(0)
   const [rowsPerPage, setRowsPerPage] = React.useState(5)
+  const [openPrompt, setOpenPrompt] = React.useState(false)
   const rates = useSelector(
     (state: AppStateType) => state.currencies.requestedCurrencies
   )
@@ -128,7 +129,12 @@ const TableOfCurrencies: FC = () => {
     }
     dispatch(actions.editCurrencies(arr()))
     setSelected([])
+    handleTogglePrompt()
   }, [rates, selected, dispatch])
+
+  const handleTogglePrompt = useCallback(() => {
+    setOpenPrompt((prev) => !prev)
+  }, [])
 
   const createSortHandler = useCallback(
     (property: keyof Data, event: React.MouseEvent<unknown>) => {
@@ -143,6 +149,8 @@ const TableOfCurrencies: FC = () => {
         <EnhancedTableToolbar
           editArrCurrencies={editArrCurrencies}
           numSelected={selected.length}
+          handleTogglePrompt={handleTogglePrompt}
+          openPrompt={openPrompt}
         />
         {!rates.length ? (
           <div className={classes.info}>You didn't choose any currencies</div>
